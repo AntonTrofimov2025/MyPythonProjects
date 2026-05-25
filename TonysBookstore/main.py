@@ -22,7 +22,8 @@ def main():
 
         menu = Menu()
         menu.add_options(["показать указанные в файле книги", "загрузить книги из файла", "загрузить свою книгу",
-                          "зарегистрироваться как клиент", "войти в свой аккаунт", "завершить работу"])
+                          "зарегистрироваться как клиент", "войти в свой аккаунт", "Show Top10 user queries",
+                          "завершить работу"])
         is_first_start = True
         while True:
             if not is_first_start:
@@ -43,8 +44,8 @@ def main():
                         user_menu = Menu()
                         user_menu.add_options(
                             ["Show your current balance", "просмотреть список всех книг в наличии",
-                             "выполнить поиск книги по части названия",
-                             "купить выбранную книгу", "выйти из аккаунта и вернуться в главное меню"])
+                             "выполнить поиск книги по части названия", "купить выбранную книгу",
+                             "выйти из аккаунта и вернуться в главное меню"])
                         first_start = True
                         while True:
                             if not first_start:
@@ -64,12 +65,14 @@ def main():
                                     break
                             first_start = False
                 case 6:
+                    conn.show_top10_queries()
+                case 7:
                     print("Good bye!! :)")
                     break
             is_first_start = False
-        cursor.execute("SELECT id, title, author, price, stock FROM books")
-        for book in cursor:
-            print(book)
+        # cursor.execute("SELECT id, title, author, price, stock FROM books")
+        # for book in cursor:
+        #     print(book)
 
 if __name__ == "__main__":
     main()

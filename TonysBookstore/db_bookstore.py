@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import pymysql
 from pymysql.cursors import DictCursor
 from sql import *
+from mongodb import Mongo
 
 load_dotenv(".env_edit")
 
@@ -16,7 +17,9 @@ class DB:
                          "cursorclass": DictCursor}
         # self.__conn = None
         # self.__cursor = None
-        self.user_data = None
+        self.__user_data = None
+        self.__mongo = Mongo()
+        self.my_bookstore = self.__mongo.my_bookstore
 
     def __enter__(self):
         self.__conn = pymysql.connect(**self.__config)
@@ -131,6 +134,7 @@ class DB:
 
     def show_book_like(self):
         which_book = input("Enter full book's title or partially: ")
+        self.my_bookstore.insert_one({"query": which_book})
         self.__cursor.execute(find_book_like, (f"%{which_book}%", ))
         books_found = self.__cursor.fetchall()
         if books_found:
@@ -140,8 +144,9 @@ class DB:
             print("No matching books found.")
 
     def buy_book(self, user_data):
-        self.user_data = user_data
+        self.__user_data = user_data
         desired_book = input("Please enter a title of desired book: ")
+        self.my_bookstore.insert_one({"query": desired_book})
         if self.__cursor.execute(find_book_like, (f"%{desired_book}%", )):
             print("We found such books: ",
                   *(f' {book["id"]}. {book["title"]} {book["author"]}, {book["price"]}€ {book["stock"]} Available.' for book in
@@ -167,9 +172,9 @@ class DB:
             return
         if quantity <= selected_book['stock']:
             try:
-                if self.user_data['balance'] >= selected_book['price'] * quantity:
+                if self.__user_data['balance'] >= selected_book['price'] * quantity:
                     self.__cursor.execute(withdraw_balance,
-                                          (selected_book['price'] * quantity, self.user_data['id']))
+                                          (selected_book['price'] * quantity, self.__user_data['id']))
                     self.__cursor.execute(update_books_stock, (quantity, selected_book['id'],))
                     self.__cursor.execute(insert_purchase,
                                           (user_data['id'], selected_book['id'], quantity, selected_book['price']))
@@ -182,7 +187,6 @@ class DB:
             except Exception as e:
                 print(f"Something went wrong: {e}")
                 self.__conn.rollback()
-
         else:
             print('The desired book is currently not available.')
             return
@@ -226,3 +230,9 @@ class DB:
                 return self.__cursor.fetchone()
             print("Invalid username or password")
             break
+
+    def show_top10_queries(self):
+        top10 = self.my_bookstore.aggregate([{"$match": {"query": {"$ne": ""}}}, {"$group": {"_id": "$query",
+                                            "count": {"$sum": 1}}}, {"$sort": {"count": -1}}, {"$project": {"_id": 0,
+                                            "query": "$_id", "count": 1}}, {"$limit": 10}])
+        print("Most frequent search queries: ", *(f"{num}. {query['query']} - {query['count']} times" for num, query in enumerate(top10, 1)), sep='\n')
