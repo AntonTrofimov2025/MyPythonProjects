@@ -76,6 +76,41 @@ class DB:
         print(f"{len(file_lines_into_list)} books uploaded. {update_count} updated.")
         file_lines_into_list.clear()
 
+    def upload_one_book(self):
+        while True:
+            try:
+                book_title = input("Please enter a book's title: ")
+                if len(book_title) < 3:
+                    raise IndexError("Book title must be at least 3 symbols in length!!")
+                book_author = input("Please enter its author name: ")
+                if len(book_author) < 3:
+                    raise IndexError("Book author must be at least 3 symbols in length!!")
+
+                if self.__cursor.execute(if_book_already_exists, (book_title, book_author)):
+                    while True:
+                        try:
+                            book_in_stock = int(input("How many do you have?: "))
+                            break
+                        except ValueError:
+                            print("For price and stock please use numbers only!!")
+                    self.__cursor.execute(update_books_quantity, (book_in_stock, book_title, book_author))
+                    self.__conn.commit()
+                    print("The quantity of your book has been successfully updated :)")
+                    return
+
+                book_price = float(input("Please enter its price: "))
+                book_in_stock = int(input("How many do you have?: "))
+
+                break
+            except IndexError as e:
+                print(e)
+            except ValueError:
+                print("For price and stock please use numbers only!!")
+
+        self.__cursor.execute(insert_books, (book_title, book_author, book_price, book_in_stock))
+        self.__conn.commit()
+        print("Your book has been successfully added to the bookstore :)")
+
     def show_me_books_in_file(self, books_file_name_csv):
         with open(books_file_name_csv, "r", encoding="utf-8") as file:
             print("Presented books in file: ")
@@ -83,6 +118,12 @@ class DB:
                 line = line.strip().split(",")
                 title, author, price, stock = line
                 print(f" - {title} {author}, {price}€ {stock} Available.")
+
+    def show_me_available_books(self):
+        self.__cursor.execute(show_available_books)
+        print("Presented books in our store: ")
+        for book in self.__cursor:
+            print(f" - {book["title"]} {book["author"]}, {book["price"]}€ {book["stock"]} Available.")
 
     def user_registration(self):
         while True:

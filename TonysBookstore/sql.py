@@ -29,6 +29,9 @@ update_books_quantity = """UPDATE books
                            WHERE title = %s
                              and author = %s"""
 
+show_available_books = """SELECT title, author, price, stock
+                          FROM books"""
+
 insert_new_user_into_users = """INSERT INTO users (name, password, balance)
                                 VALUES (%s, %s, %s)"""
 
