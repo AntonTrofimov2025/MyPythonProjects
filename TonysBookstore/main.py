@@ -9,6 +9,7 @@ def main():
         conn.create_db()
         conn.create_table_book()
         conn.create_table_users()
+        conn.create_table_purchases()
         # cursor.execute("DELETE FROM books")
         # cursor.execute("DELETE FROM users")
         # cursor.execute("ALTER TABLE books auto_increment=1")

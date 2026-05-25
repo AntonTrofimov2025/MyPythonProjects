@@ -56,6 +56,9 @@ class DB:
     def create_table_users(self):
         return self.__cursor.execute(create_table_users)
 
+    def create_table_purchases(self):
+        return self.__cursor.execute(create_table_purchases)
+
     def upload_your_books(self, books_file_name_csv):
         file_lines_into_list = []
         update_count = 0
@@ -165,12 +168,11 @@ class DB:
         if quantity <= selected_book['stock']:
             try:
                 if self.user_data['balance'] >= selected_book['price'] * quantity:
-                    self.__cursor.execute("""UPDATE users
-                                             SET balance = balance - %s
-                                             WHERE id = %s""", (selected_book['price'] * quantity, self.user_data['id']))
-                    self.__cursor.execute("""UPDATE books
-                                             SET stock = stock - %s
-                                             WHERE id = %s""", (quantity, selected_book['id'],))
+                    self.__cursor.execute(withdraw_balance,
+                                          (selected_book['price'] * quantity, self.user_data['id']))
+                    self.__cursor.execute(update_books_stock, (quantity, selected_book['id'],))
+                    self.__cursor.execute(insert_purchase,
+                                          (user_data['id'], selected_book['id'], quantity, selected_book['price']))
                     self.__conn.commit()
                     print("Thank you for your purchase!! :)))")
                     return
