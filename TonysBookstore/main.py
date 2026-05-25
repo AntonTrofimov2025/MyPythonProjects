@@ -1,4 +1,4 @@
-from TonysBookstore.sql import show_available_books
+from TonysBookstore.sql import user_auth
 from db_bookstore import DB
 from ui import Menu
 
@@ -20,9 +20,12 @@ def main():
         print("Tables in 'bookstore_anton_t': ", *(f" - {table['Tables_in_bookstore_anton_t']}" for table in cursor), sep="\n")
 
         menu = Menu()
-        menu.add_options(["показать указанные в файле книги", "загрузить книги из файла", "загрузить свою книгу", "посмотреть книги в наличии", "зарегистрироваться как клиент",
-                          "войти в свой аккаунт", "завершить работу"])
+        menu.add_options(["показать указанные в файле книги", "загрузить книги из файла", "загрузить свою книгу",
+                          "зарегистрироваться как клиент", "войти в свой аккаунт", "завершить работу"])
+        is_first_start = True
         while True:
+            if not is_first_start:
+                input("Press ENTER to continue...")
             match menu.show_options():
                 case 1:
                     conn.show_me_books_in_file("my_books")
@@ -31,12 +34,38 @@ def main():
                 case 3:
                     conn.upload_one_book()
                 case 4:
-                    conn.show_me_available_books()
-                case 5:
                     conn.user_registration()
-                case 7:
+                case 5:
+                    user_data = conn.user_authorization()
+                    if user_data:
+                        print(f"Greetings, {user_data['name']}!", f"your user_id: {user_data['id']}", sep="\n")
+                        user_menu = Menu()
+                        user_menu.add_options(
+                            ["Show your current balance", "просмотреть список всех книг в наличии",
+                             "выполнить поиск книги по части названия",
+                             "купить выбранную книгу", "выйти из аккаунта и вернуться в главное меню"])
+                        first_start = True
+                        while True:
+                            if not first_start:
+                                input("Press ENTER to continue...")
+                            match user_menu.show_options():
+                                case 1:
+                                    print(f"Your current balance: {user_data['balance']}")
+                                case 2:
+                                    conn.show_me_available_books()
+                                case 3:
+                                    conn.show_book_like()
+                                case 4:
+                                    conn.buy_book(user_data)
+                                    cursor.execute(user_auth, (user_data['name'], user_data['password']))
+                                    user_data = cursor.fetchone()
+                                case 5:
+                                    break
+                            first_start = False
+                case 6:
                     print("Good bye!! :)")
                     break
+            is_first_start = False
         cursor.execute("SELECT id, title, author, price, stock FROM books")
         for book in cursor:
             print(book)

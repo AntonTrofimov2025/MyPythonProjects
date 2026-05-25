@@ -29,10 +29,20 @@ update_books_quantity = """UPDATE books
                            WHERE title = %s
                              and author = %s"""
 
-show_available_books = """SELECT title, author, price, stock
-                          FROM books"""
+show_available_books = """SELECT id, title, author, price, stock
+                          FROM books WHERE stock > 0"""
+
+find_book_like = """SELECT id, title, author, price, stock
+                    FROM books
+                    WHERE title LIKE %s"""
+
+find_book_by_id = """SELECT id, title, author, price, stock
+                     FROM books
+                     WHERE id = %s"""
 
 insert_new_user_into_users = """INSERT INTO users (name, password, balance)
                                 VALUES (%s, %s, %s)"""
 
 if_user_exists = """SELECT name FROM users WHERE name = %s"""
+
+user_auth = """SELECT id, name, password, balance FROM users WHERE name = %s and password = %s"""

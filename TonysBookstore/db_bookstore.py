@@ -16,6 +16,7 @@ class DB:
                          "cursorclass": DictCursor}
         # self.__conn = None
         # self.__cursor = None
+        self.user_data = None
 
     def __enter__(self):
         self.__conn = pymysql.connect(**self.__config)
@@ -83,8 +84,8 @@ class DB:
                 if len(book_title) < 3:
                     raise IndexError("Book title must be at least 3 symbols in length!!")
                 book_author = input("Please enter its author name: ")
-                if len(book_author) < 3:
-                    raise IndexError("Book author must be at least 3 symbols in length!!")
+                if len(book_author) < 2:
+                    raise IndexError("Book author must be at least 2 symbols in length!!")
 
                 if self.__cursor.execute(if_book_already_exists, (book_title, book_author)):
                     while True:
@@ -122,8 +123,67 @@ class DB:
     def show_me_available_books(self):
         self.__cursor.execute(show_available_books)
         print("Presented books in our store: ")
-        for book in self.__cursor:
-            print(f" - {book["title"]} {book["author"]}, {book["price"]}€ {book["stock"]} Available.")
+        for num, book in enumerate(self.__cursor, 1):
+            print(f" {num}. {book["title"]} by {book["author"]} - {book["price"]}€ ({book["stock"]} Available.)")
+
+    def show_book_like(self):
+        which_book = input("Enter full book's title or partially: ")
+        self.__cursor.execute(find_book_like, (f"%{which_book}%", ))
+        books_found = self.__cursor.fetchall()
+        if books_found:
+            for book in books_found:
+                print(f" - {book["title"]} by {book["author"]} - {book["price"]}€ ({book["stock"]} Available.)")
+        else:
+            print("No matching books found.")
+
+    def buy_book(self, user_data):
+        self.user_data = user_data
+        desired_book = input("Please enter a title of desired book: ")
+        if self.__cursor.execute(find_book_like, (f"%{desired_book}%", )):
+            print("We found such books: ",
+                  *(f' {book["id"]}. {book["title"]} {book["author"]}, {book["price"]}€ {book["stock"]} Available.' for book in
+                    self.__cursor), sep="\n")
+        else:
+            print('The book not found.')
+            return
+        while True:
+            try:
+                choose_book_id = int(input("Please select book's id: "))
+                quantity = int(input("How many would you like to buy?: "))
+                if not quantity:
+                    raise IndexError("The quantity cannot be negative or equal zero!!")
+                break
+            except ValueError:
+                print('Use numbers to select your book (book_id) and quantity.')
+            except IndexError as e:
+                print(e)
+        self.__cursor.execute(find_book_by_id, (choose_book_id,))
+        selected_book = self.__cursor.fetchone()
+        if not selected_book:
+            print("'book_id' not found. We are so sorry. :'(((")
+            return
+        if quantity <= selected_book['stock']:
+            try:
+                if self.user_data['balance'] >= selected_book['price'] * quantity:
+                    self.__cursor.execute("""UPDATE users
+                                             SET balance = balance - %s
+                                             WHERE id = %s""", (selected_book['price'] * quantity, self.user_data['id']))
+                    self.__cursor.execute("""UPDATE books
+                                             SET stock = stock - %s
+                                             WHERE id = %s""", (quantity, selected_book['id'],))
+                    self.__conn.commit()
+                    print("Thank you for your purchase!! :)))")
+                    return
+                else:
+                    print("Not enough cash to buy a book, we are sorry.")
+                    return
+            except Exception as e:
+                print(f"Something went wrong: {e}")
+                self.__conn.rollback()
+
+        else:
+            print('The desired book is currently not available.')
+            return
 
     def user_registration(self):
         while True:
@@ -154,3 +214,13 @@ class DB:
         self.__cursor.execute(insert_new_user_into_users, (your_credentials, your_pass, float(init_balance)))
         self.__conn.commit()
         print("Thank you for your registration! :)")
+
+    def user_authorization(self):
+        while True:
+            login = input("Enter your login: ")
+            password = input("Enter your password: ")
+            if self.__cursor.execute(user_auth, (login, password)):
+                print("Successful authorization!")
+                return self.__cursor.fetchone()
+            print("Invalid username or password")
+            break
