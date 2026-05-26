@@ -70,9 +70,15 @@ class DB:
                 line = line.strip().split(",")
                 if len(line) != 4:
                     print("Use only these fields: title, author, price, stock")
-                    break
+                    self.__conn.rollback()
+                    return
                 title, author, price, stock = line
-                line = (title, author, float(price), int(stock))
+                try:
+                    line = (title, author, float(price), int(stock))
+                except ValueError:
+                    print("There is incorrect value either in price or stock.")
+                    self.__conn.rollback()
+                    return
                 if self.__cursor.execute(if_book_already_exists, (title, author)):
                     self.__cursor.execute(update_books_quantity, (stock, title, author))
                     update_count += 1
