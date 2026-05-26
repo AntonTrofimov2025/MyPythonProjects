@@ -15,8 +15,8 @@ class DB:
                          "user": os.environ.get("DB_USER", "username"),
                          "password": os.environ.get("DB_PASSWORD", "password"),
                          "cursorclass": DictCursor}
-        # self.__conn = None
-        # self.__cursor = None
+        self.__conn = None
+        self.__cursor = None
         self.__user_data = None
         self.__mongo = Mongo()
         self.my_bookstore = self.__mongo.my_bookstore
@@ -235,4 +235,5 @@ class DB:
         top10 = self.my_bookstore.aggregate([{"$match": {"query": {"$ne": ""}}}, {"$group": {"_id": "$query",
                                             "count": {"$sum": 1}}}, {"$sort": {"count": -1}}, {"$project": {"_id": 0,
                                             "query": "$_id", "count": 1}}, {"$limit": 10}])
-        print("Most frequent search queries: ", *(f"{num}. {query['query']} - {query['count']} times" for num, query in enumerate(top10, 1)), sep='\n')
+        print("Most frequent search queries: ",
+              *(f"{num}. {query['query']} - {query['count']} times" for num, query in enumerate(top10, 1)), sep='\n')
