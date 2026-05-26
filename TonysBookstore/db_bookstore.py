@@ -4,13 +4,12 @@ from dotenv import load_dotenv
 import pymysql
 from pymysql.cursors import DictCursor
 from sql import *
-from mongodb import Mongo
 
 load_dotenv(".env_edit")
 
 
 class DB:
-    def __init__(self):
+    def __init__(self, mongo_db):
         self.__config = {"host": os.environ.get("DB_HOST", "localhost"),
                          "user": os.environ.get("DB_USER", "username"),
                          "password": os.environ.get("DB_PASSWORD", "password"),
@@ -18,13 +17,13 @@ class DB:
         self.__conn = None
         self.__cursor = None
         self.__user_data = None
-        self.__mongo = Mongo()
+        self.__mongo = mongo_db
         self.my_bookstore = self.__mongo.my_bookstore
 
     def __enter__(self):
         self.__conn = pymysql.connect(**self.__config)
         self.__cursor = self.__conn.cursor()
-        print("Connection successful!")
+        print("MySQL Connection successful!")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -36,6 +35,7 @@ class DB:
             else:
                 self.__conn.commit()
             self.__conn.close()
+            print("MySQL Connection closed.")
 
     @property
     def cursor(self):

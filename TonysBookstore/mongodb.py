@@ -17,9 +17,10 @@ class Mongo:
 
     def __enter__(self):
         self.__client.admin.command("ping")
-        print("Connection successful!")
+        print("Mongo Connection successful!")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.__client:
             self.__client.close()
+            print("Mongo Connection closed.")

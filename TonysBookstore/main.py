@@ -1,9 +1,10 @@
 from TonysBookstore.sql import user_auth
 from db_bookstore import DB
 from ui import Menu
+from mongodb import Mongo
 
 def main():
-    with DB() as conn:
+    with Mongo() as mongo_db, DB(mongo_db) as conn:
         cursor = conn.cursor
         conn.use_bookstore()
         conn.create_db()
