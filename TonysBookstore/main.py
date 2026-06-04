@@ -1,4 +1,4 @@
-from TonysBookstore.sql import user_auth
+from sql import user_auth
 from db_bookstore import DB
 from ui import Menu
 from mongodb import Mongo
